@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 
 import structlog
 from rel import rel
@@ -37,12 +38,12 @@ class SymbolPriceObservable:
     def _on_message(self, ws: WebSocketApp, message: str) -> None:
         """Receive ticker updates from websocket and forward price to observers"""
         parsed_message = json.loads(message)
-        latest_price = parsed_message["c"]
+        latest_price = Decimal(parsed_message["c"])
         logger.info(f"Latest price for {self.symbol}: {latest_price}")
 
         # notify all observers
         for observer in self.observers:
-            observer.notify(latest_price)
+            observer.notify_price(latest_price)
 
     def _on_error(self, ws: WebSocketApp, error: str) -> None:
         """Callback if websocket has an error
@@ -55,8 +56,13 @@ class SymbolPriceObservable:
             observer.notify_error(error)
 
     def _on_close(self, ws: WebSocketApp, *args) -> None:
-        """Callback if websocket is closed"""
+        """Callback if websocket is closed
+
+        We call the error notifier of each observer
+        """
         logger.info(f"Closed connection to {ws.url.split('/')[-1]}")
+        for observer in self.observers:
+            observer.notify_error("Websocket closed")
 
     def _on_open(self, ws: WebSocketApp):
         """Callback if websocket is opened"""
