@@ -19,12 +19,10 @@
     ```
 
 ### Tests
-I just added one test for illustration purposes. 
-In a production application I would add unittest for every function/method and integration tests to check that
-the components interact correctly.
+This project contains unittests for the `market_makers` module.
 
 ```shell script
-pytest tests.py
+pytest
 ```
 
 
