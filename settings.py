@@ -14,4 +14,4 @@ BINANCE_SECRET_KEY = env("BINANCE_SECRET_KEY")
 WEBSOCKET_URI = "wss://stream.binance.com:443"
 
 DEFAULT_QUANTITY = Decimal("0.1")
-DEFAULT_SPREAD = Decimal("2")
+DEFAULT_SPREAD = Decimal("50")

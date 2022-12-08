@@ -3,7 +3,7 @@ from decimal import Decimal
 import structlog
 
 import settings
-from client import BinanceSpotClient
+from client import BinanceSpotClient, APIException
 
 logger = structlog.get_logger()
 
@@ -38,15 +38,19 @@ class BinanceMarketMaker:
         Args:
             latest_price (Decimal): Price from ticker
         """
-        logger.info(f"{self}: {latest_price} received")
-
-        # if no orders are in place create new ones
-        if self.current_ask_order is None and self.current_bid_order is None:
-            self.create_maker_orders(latest_price)
-        # If ask or bid order was filled, cancel orders and create new ones
-        elif self.order_got_filled(latest_price):
+        try:
+            # if no orders are in place create new ones
+            if self.current_ask_order is None and self.current_bid_order is None:
+                self.create_maker_orders(latest_price)
+            # If ask or bid order was filled, cancel orders and create new ones
+            # An alternative approach would be to use the "cancel_and_replace" endpoint which would save us one API call
+            elif self.order_got_filled(latest_price):
+                self.client.cancel_all_orders(self.symbol)
+                self.create_maker_orders(latest_price)
+        except APIException as e:
+            # In case we get an API error make sure to cancel all open orders
             self.client.cancel_all_orders(self.symbol)
-            self.create_maker_orders(latest_price)
+            raise e
 
     def order_got_filled(self, latest_price: Decimal) -> bool:
         """Check if ask or bid order got filled

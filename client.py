@@ -3,11 +3,16 @@ import hmac
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Union
 from urllib.parse import urlencode
 
 import requests
 
 import settings
+
+
+class APIException(Exception):
+    pass
 
 
 class BinanceSpotClient:
@@ -41,7 +46,9 @@ class BinanceSpotClient:
             hashlib.sha256,
         ).hexdigest()
 
-    def _send_request(self, method: str, endpoint: str, payload: dict) -> dict:
+    def _send_request(
+        self, method: str, endpoint: str, payload: dict
+    ) -> Union[list, dict]:
         """Send request to REST API
 
         Args:
@@ -62,8 +69,12 @@ class BinanceSpotClient:
             response = request_method(url, params=payload)
         else:
             response = request_method(url, data=payload)
-
-        return response.json()
+        if response.status_code != 200:
+            raise APIException(response.text)
+        try:
+            return response.json()
+        except ValueError:
+            raise APIException(response.text)
 
     def place_limit_order(
         self,
@@ -95,7 +106,7 @@ class BinanceSpotClient:
 
         return self._send_request("post", url, payload)
 
-    def cancel_all_orders(self, symbol: str) -> dict:
+    def cancel_all_orders(self, symbol: str) -> list:
         """Cancel all open orders for symbol
 
         Args:
@@ -107,9 +118,12 @@ class BinanceSpotClient:
         payload = {
             "symbol": symbol,
         }
+        # first check if there are open orders before we cancel them
+        if len(self.get_open_orders(symbol)) == 0:
+            return []
         return self._send_request("delete", endpoint, payload)
 
-    def get_open_orders(self, symbol: str) -> dict:
+    def get_open_orders(self, symbol: str) -> list:
         """Get all open orders for symbol
 
         Args:
@@ -158,29 +172,3 @@ class BinanceSpotClient:
         }
 
         return self._send_request("post", endpoint, payload)
-
-
-if __name__ == "__main__":
-    c = BinanceSpotClient()
-    symbol = "BTCUSDT"
-    order = c.place_limit_order(
-        symbol=symbol,
-        side=BinanceSpotClient.Side.SELL,
-        quantity=Decimal("0.1"),
-        price=Decimal(20000),
-    )
-    print(order)
-    print(c.get_open_orders(symbol))
-
-    print(
-        c.cancel_and_replace(
-            symbol=symbol,
-            side=BinanceSpotClient.Side.SELL,
-            quantity=Decimal("0.1"),
-            price=Decimal(50000),
-            cancel_order_id=order["orderId"],
-        )
-    )
-    print(c.get_open_orders(symbol))
-    print(c.cancel_all_orders(symbol))
-    print(c.get_open_orders(symbol))
