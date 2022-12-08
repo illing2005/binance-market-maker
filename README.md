@@ -1,7 +1,32 @@
 # Binance Market Maker
 
 ## How to run
-TODO
+1. Install dependencies
+    ```shell script
+    pip install -r requirements/compiled/requirements.txt
+    ```
+
+2. Get API credentials for the testnet: https://testnet.binance.vision/
+
+3. Make copy `.env.example` and add your API credentials (`BINANCE_API_KEY` and `BINANCE_SECRET_KEY`)
+    ```shell script
+    cp .env.example .env
+    ```
+
+4. Run the market maker script
+    ```shell script
+    python main.py
+    ```
+
+### Tests
+I just added one test for illustration purposes. 
+In a production application I would add unittest for every function/method and integration tests to check that
+the components interact correctly.
+
+```shell script
+pytest tests.py
+```
+
 
 ### Dependencies
 This project uses [pip-tools](https://github.com/jazzband/pip-tools) for dependency management.
@@ -12,7 +37,10 @@ Then we need to compile the requirements:
 pip-compile --generate-hashes requirements/src/requirements.in  -o requirements/compiled/requirements.txt
 ```
 
-### Task description
+In a production application I'd split up the requirements into local and production.
+Libraries used for testing wouldn't be installed on the server.
+
+## Task description
 
 You are asked to provide liquidity to the Exchange, placing open orders
 and adjusting the price when the market is moving. To keep it simple:
